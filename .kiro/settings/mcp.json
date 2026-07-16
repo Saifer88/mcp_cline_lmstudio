@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cline-tools": {
+      "command": "node",
+      "args": ["/Users/pirrima001/coding/personal/mcp_server_sai/dist/index.js"],
+      "disabled": false
+    }
+  }
+}
