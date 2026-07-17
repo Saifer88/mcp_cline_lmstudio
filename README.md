@@ -1,14 +1,15 @@
 # Cline MCP Server
 
-An MCP (Model Context Protocol) server that gives Cline + LM Studio superpowers: web search, image downloading, webpage reading, command execution, and PDF parsing — all without needing API keys.
+An MCP (Model Context Protocol) server that adds web search, image search, image downloading, webpage reading, command execution, and PDF parsing — all without needing API keys.
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
 | `web_search` | Search the web via DuckDuckGo (no API key needed) |
+| `image_search` | Search for images with pagination and pixel size filtering |
 | `fetch_webpage` | Fetch and extract readable text from any URL |
-| `download_image` | Download images from URLs to local files |
+| `download_image` | Download images from URLs to local files (absolute path required) |
 | `execute_command` | Run shell commands with safety checks |
 | `read_pdf` | Extract text from local or remote PDF files |
 
@@ -17,54 +18,49 @@ An MCP (Model Context Protocol) server that gives Cline + LM Studio superpowers:
 ### 1. Build the server
 
 ```bash
-cd ~/cline-mcp-server
 npm install
 npm run build
 ```
 
-### 2. Configure Cline to use this MCP server
+### 2. Configure as MCP server
 
-Open your Cline MCP settings file. Depending on your setup, this is typically at:
-
-- **VS Code**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
-- **Cursor**: `~/Library/Application Support/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
-
-Add this entry to the `mcpServers` object:
+Add this entry to your MCP settings (adjust the path to where you cloned this repo):
 
 ```json
 {
   "mcpServers": {
     "cline-tools": {
       "command": "node",
-      "args": ["/Users/pirrima001/cline-mcp-server/dist/index.js"],
+      "args": ["<path-to-repo>/dist/index.js"],
       "disabled": false
     }
   }
 }
 ```
 
-### 3. Restart Cline
+### 3. Restart your IDE/client
 
-After saving the config, restart the Cline extension (or reload the VS Code window). You should see the new tools available in Cline's MCP tools list.
+After saving the config, restart the extension or reload the window. The tools should appear in the MCP tools list.
 
 ## Usage Examples
 
-Once connected, Cline (even with LM Studio) can:
-
 **Search the web:**
 > "Search for the latest React 19 features"
+
+**Search for images (with pagination):**
+> "Find images of Pirelli tyres, page 2, minimum 1920px wide"
 
 **Read a webpage:**
 > "Fetch the content from https://docs.python.org/3/tutorial/"
 
 **Download images:**
-> "Download the image at https://example.com/photo.jpg to ./downloads/photo.jpg"
+> "Download the image at https://example.com/photo.jpg to /Users/you/project/downloads/photo.jpg"
 
 **Run commands:**
 > "Run `ls -la` in my home directory"
 
 **Read PDFs:**
-> "Extract the text from ./documents/paper.pdf"
+> "Extract the text from /Users/you/documents/paper.pdf"
 
 ## Development
 
@@ -82,12 +78,13 @@ npm start
 ## How It Works
 
 - **Web search** scrapes DuckDuckGo's HTML results page (no API key required)
+- **Image search** uses DuckDuckGo's image API with pagination and client-side pixel filtering
 - **Webpage fetching** uses Cheerio to extract clean text, stripping ads/nav/scripts
-- **Image download** streams the file to disk with content-type validation
+- **Image download** streams the file to disk with content-type validation (requires absolute paths)
 - **Command execution** has a blocklist for dangerous patterns (rm -rf /, fork bombs, etc.)
 - **PDF reading** works with both local files and URLs
 
 ## Requirements
 
-- Node.js 18+ (tested with 18.19.1)
+- Node.js 20+
 - No API keys needed — everything works out of the box
