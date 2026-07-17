@@ -7,7 +7,7 @@ export async function downloadImage(
 ): Promise<string> {
   if (!isAbsolute(savePath)) {
     throw new Error(
-      `savePath must be an absolute path (e.g. /Users/you/project/images/photo.png). Received relative path: "${savePath}"`
+      `savePath must be an absolute path (e.g. /Users/you/project/images/photo.png or C:\\Users\\you\\project\\images\\photo.png). Received relative path: "${savePath}"`
     );
   }
 

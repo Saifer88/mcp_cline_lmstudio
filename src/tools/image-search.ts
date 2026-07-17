@@ -14,20 +14,32 @@ export interface ImageSearchResponse {
   hasNextPage: boolean;
 }
 
+export interface SizeFilter {
+  minWidth?: number;
+  maxWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
+}
+
 /**
  * Search for images using DuckDuckGo image search.
  * Supports pagination via the `page` parameter (1-based).
+ * Supports optional pixel dimension filtering.
  */
 export async function imageSearch(
   query: string,
   page: number = 1,
-  maxResults: number = 10
+  maxResults: number = 10,
+  sizeFilter?: SizeFilter
 ): Promise<ImageSearchResponse> {
   const vqd = await getVqd(query);
 
   // Calculate offset for pagination (each page = maxResults items)
   const offset = (page - 1) * maxResults;
 
+  // Build the size filter string for DuckDuckGo's API
+  // Format: size:TYPE where TYPE is Small, Medium, Large, Wallpaper
+  // Or we can filter client-side for precise pixel ranges
   const params = new URLSearchParams({
     l: "wt-wt",
     o: "json",
@@ -57,16 +69,27 @@ export async function imageSearch(
 
   const data = (await response.json()) as DdgImageResponse;
 
-  const results: ImageResult[] = (data.results || [])
-    .slice(0, maxResults)
-    .map((item) => ({
-      title: item.title || "",
-      imageUrl: item.image || "",
-      thumbnailUrl: item.thumbnail || "",
-      sourceUrl: item.url || "",
-      width: item.width,
-      height: item.height,
-    }));
+  let items = (data.results || []).map((item) => ({
+    title: item.title || "",
+    imageUrl: item.image || "",
+    thumbnailUrl: item.thumbnail || "",
+    sourceUrl: item.url || "",
+    width: item.width,
+    height: item.height,
+  }));
+
+  // Apply pixel dimension filters if provided
+  if (sizeFilter) {
+    items = items.filter((img) => {
+      if (sizeFilter.minWidth && (img.width === undefined || img.width < sizeFilter.minWidth)) return false;
+      if (sizeFilter.maxWidth && (img.width === undefined || img.width > sizeFilter.maxWidth)) return false;
+      if (sizeFilter.minHeight && (img.height === undefined || img.height < sizeFilter.minHeight)) return false;
+      if (sizeFilter.maxHeight && (img.height === undefined || img.height > sizeFilter.maxHeight)) return false;
+      return true;
+    });
+  }
+
+  const results: ImageResult[] = items.slice(0, maxResults);
 
   return {
     results,

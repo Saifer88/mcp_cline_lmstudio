@@ -104,9 +104,12 @@ server.registerTool(
       url: z.string().url().describe("The image URL to download"),
       savePath: z
         .string()
-        .startsWith("/", { message: "savePath must be an absolute path starting with /" })
+        .refine(
+          (p) => p.startsWith("/") || /^[A-Za-z]:[/\\]/.test(p),
+          { message: "savePath must be an absolute path (e.g. /Users/you/project/photo.png or C:\\Users\\you\\project\\photo.png)" }
+        )
         .describe(
-          "Absolute file path where the image should be saved (e.g. /Users/you/project/images/photo.png)"
+          "Absolute file path where the image should be saved (e.g. /Users/you/project/images/photo.png or C:\\Users\\you\\project\\images\\photo.png)"
         ),
     },
     annotations: {
@@ -226,12 +229,16 @@ server.registerTool(
   "image_search",
   {
     title: "Image Search",
-    description: `Search for images using DuckDuckGo. Returns image URLs, thumbnails, titles, and source pages. Supports pagination to browse results page by page.
+    description: `Search for images using DuckDuckGo. Returns image URLs, thumbnails, titles, and source pages. Supports pagination and optional pixel size filtering.
 
 Args:
   - query (string): The image search query (e.g. "Pirelli P Zero tyre")
   - page (number): Page number for pagination, 1-based (default: 1)
   - maxResults (number): Maximum results per page, 1-20 (default: 10)
+  - minWidth (number, optional): Minimum image width in pixels
+  - maxWidth (number, optional): Maximum image width in pixels
+  - minHeight (number, optional): Minimum image height in pixels
+  - maxHeight (number, optional): Maximum image height in pixels
 
 Returns:
   {
@@ -242,8 +249,9 @@ Returns:
   }
 
 Examples:
-  - Page 1: { query: "Pirelli tyres", page: 1 }
-  - Page 2: { query: "Pirelli tyres", page: 2 }`,
+  - All images: { query: "Pirelli tyres", page: 1 }
+  - Large images only: { query: "Pirelli tyres", minWidth: 1920, minHeight: 1080 }
+  - Small thumbnails: { query: "Pirelli logo", maxWidth: 500, maxHeight: 500 }`,
     inputSchema: {
       query: z.string().min(1).describe("The image search query"),
       page: z
@@ -259,6 +267,30 @@ Examples:
         .max(20)
         .default(10)
         .describe("Maximum number of results per page (default: 10, max: 20)"),
+      minWidth: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("Minimum image width in pixels"),
+      maxWidth: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("Maximum image width in pixels"),
+      minHeight: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("Minimum image height in pixels"),
+      maxHeight: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("Maximum image height in pixels"),
     },
     annotations: {
       readOnlyHint: true,
@@ -267,9 +299,13 @@ Examples:
       openWorldHint: true,
     },
   },
-  async ({ query, page, maxResults }) => {
+  async ({ query, page, maxResults, minWidth, maxWidth, minHeight, maxHeight }) => {
     try {
-      const results = await imageSearch(query, page, maxResults);
+      const sizeFilter =
+        minWidth || maxWidth || minHeight || maxHeight
+          ? { minWidth, maxWidth, minHeight, maxHeight }
+          : undefined;
+      const results = await imageSearch(query, page, maxResults, sizeFilter);
       return {
         content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
       };
