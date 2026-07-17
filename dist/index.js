@@ -82,12 +82,13 @@ server.registerTool("fetch_webpage", {
 // Download Image
 server.registerTool("download_image", {
     title: "Download Image",
-    description: "Download an image from a URL and save it to a local file path.",
+    description: "Download an image from a URL and save it to a local file path. The save path MUST be absolute.",
     inputSchema: {
         url: z.string().url().describe("The image URL to download"),
         savePath: z
             .string()
-            .describe("Local file path where the image should be saved (e.g. ./images/photo.png)"),
+            .startsWith("/", { message: "savePath must be an absolute path starting with /" })
+            .describe("Absolute file path where the image should be saved (e.g. /Users/you/project/images/photo.png)"),
     },
     annotations: {
         readOnlyHint: false,

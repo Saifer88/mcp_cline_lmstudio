@@ -1,9 +1,10 @@
 import { writeFile, mkdir } from "fs/promises";
-import { dirname } from "path";
-import { resolve } from "path";
+import { dirname, isAbsolute } from "path";
 export async function downloadImage(url, savePath) {
-    // Resolve the path
-    const resolvedPath = resolve(savePath);
+    if (!isAbsolute(savePath)) {
+        throw new Error(`savePath must be an absolute path (e.g. /Users/you/project/images/photo.png). Received relative path: "${savePath}"`);
+    }
+    const resolvedPath = savePath;
     // Ensure the directory exists
     const dir = dirname(resolvedPath);
     await mkdir(dir, { recursive: true });
